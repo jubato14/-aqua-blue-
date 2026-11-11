@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { InventoryItem } from './types';
-import { supabase } from './supabase';
+import { supabase, isSupabaseConfigured } from './supabase';
 
 const STAGE_ORDER = [
   'شمعة 1',
@@ -36,13 +36,14 @@ const PART_ORDER = [
   'محبس دخول (عصفوره)',
   'محبس تانك',
   'خزان (تانك)',
+  'هاوسنج',
   'كلبسات',
   'حنفيه عاديه',
   'حنفيه لوكس',
   'موتور'
 ];
 
-function sortInventoryItems(items: InventoryItem[]): InventoryItem[] {
+export function sortInventoryItems(items: InventoryItem[]): InventoryItem[] {
   return [...items].sort((a, b) => {
     if (a.category !== b.category) {
       return a.category.localeCompare(b.category);
@@ -68,156 +69,147 @@ function sortInventoryItems(items: InventoryItem[]): InventoryItem[] {
   });
 }
 
+export const getInitialSeedInventory = (): InventoryItem[] => [
+  // المراحل والشمعات القياسية
+  { id: 'inv_s1', name: 'شمعة 1', category: 'stage', quantity: 38 },
+  { id: 'inv_s2', name: 'شمعة 2', category: 'stage', quantity: 29 },
+  { id: 'inv_s3', name: 'شمعة 3', category: 'stage', quantity: 32 },
+  { id: 'inv_s4_mem', name: 'شمعة 4 (الممبرين)', category: 'stage', quantity: 16 },
+  { id: 'inv_s4', name: 'شمعة 4', category: 'stage', quantity: 10 },
+  { id: 'inv_s5', name: 'شمعة 5', category: 'stage', quantity: 24 },
+  { id: 'inv_s6', name: 'شمعة 6', category: 'stage', quantity: 18 },
+  { id: 'inv_s7', name: 'شمعة 7', category: 'stage', quantity: 15 },
+  { id: 'inv_s8', name: 'شمعة 8', category: 'stage', quantity: 12 },
+
+  // شمعات الكومباكت
+  { id: 'inv_sc1', name: 'شمعة 1 كومباكت', category: 'stage', quantity: 22 },
+  { id: 'inv_sc2', name: 'شمعة 2 كومباكت', category: 'stage', quantity: 19 },
+  { id: 'inv_sc3', name: 'شمعة 3 كومباكت', category: 'stage', quantity: 17 },
+  { id: 'inv_sc4_mem', name: 'شمعة 4 كومباكت (الممبرين)', category: 'stage', quantity: 12 },
+  { id: 'inv_sc4', name: 'شمعة 4 كومباكت', category: 'stage', quantity: 8 },
+  { id: 'inv_sc5', name: 'شمعة 5 كومباكت', category: 'stage', quantity: 14 },
+  { id: 'inv_sc6', name: 'شمعة 6 كومباكت', category: 'stage', quantity: 11 },
+  { id: 'inv_sc7', name: 'شمعة 7 كومباكت', category: 'stage', quantity: 10 },
+  { id: 'inv_sc8', name: 'شمعة 8 كومباكت', category: 'stage', quantity: 8 },
+
+  // قطع الغيار
+  { id: 'inv_p_motor', name: 'موتور', category: 'part', quantity: 8 },
+  { id: 'inv_p_tank', name: 'خزان (تانك)', category: 'part', quantity: 12 },
+  { id: 'inv_p_housing', name: 'هاوسنج', category: 'part', quantity: 16 },
+  { id: 'inv_p_cap_dark', name: 'كاب معتم', category: 'part', quantity: 15 },
+  { id: 'inv_p_cap_s4', name: 'كاب شمعه رابعه (ممبرين)', category: 'part', quantity: 10 },
+  { id: 'inv_p_sens_hi', name: 'سنسور فصل (هاي)', category: 'part', quantity: 25 },
+  { id: 'inv_p_sens_lo', name: 'سنسور تشغيل (لو)', category: 'part', quantity: 22 },
+  { id: 'inv_p_elbow_std', name: 'كوع عادي', category: 'part', quantity: 45 },
+  { id: 'inv_p_elbow_s4', name: 'كوع شمعه رابعه', category: 'part', quantity: 30 },
+  { id: 'inv_p_fourway', name: 'فور واي (رباعي)', category: 'part', quantity: 18 },
+  { id: 'inv_p_drain', name: 'درين / قلم صرف', category: 'part', quantity: 24 },
+  { id: 'inv_p_valve_mix', name: 'محبس خلط بلاستيك', category: 'part', quantity: 14 },
+  { id: 'inv_p_valve_in', name: 'محبس دخول (عصفوره)', category: 'part', quantity: 20 },
+  { id: 'inv_p_valve_tank', name: 'محبس تانك', category: 'part', quantity: 26 },
+  { id: 'inv_p_clips', name: 'كلبسات', category: 'part', quantity: 60 },
+  { id: 'inv_p_tap_std', name: 'حنفيه عاديه', category: 'part', quantity: 12 },
+  { id: 'inv_p_tap_lux', name: 'حنفيه لوكس', category: 'part', quantity: 15 },
+
+  // الأجهزة الكاملة
+  { id: 'inv_d_7std', name: 'فلتر 7 مراحل R.O استاندارد', category: 'device', quantity: 10 },
+  { id: 'inv_d_7cmp', name: 'فلتر 7 مراحل كومباكت', category: 'device', quantity: 6 },
+  { id: 'inv_d_6std', name: 'فلتر 6 مراحل R.O', category: 'device', quantity: 8 }
+];
+
 export function useInventory(uid: string | undefined, addToTrash?: (type: 'customer' | 'visit' | 'inventory', data: any) => void) {
-  const [inventory, setInventory] = useState<InventoryItem[]>([]);
+  const [inventory, setInventory] = useState<InventoryItem[]>(() => {
+    for (const key of ['aqua_blue_inventory', 'inventory']) {
+      const saved = localStorage.getItem(key);
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) return sortInventoryItems(parsed);
+        } catch(e) {}
+      }
+    }
+    const seed = getInitialSeedInventory();
+    try {
+      localStorage.setItem('aqua_blue_inventory', JSON.stringify(seed));
+    } catch(e) {}
+    return sortInventoryItems(seed);
+  });
+
+  const persistToLocal = (items: InventoryItem[]) => {
+    try {
+      localStorage.setItem('aqua_blue_inventory', JSON.stringify(items));
+    } catch(e) {
+      console.error("Local storage save error:", e);
+    }
+  };
 
   const fetchInventory = async () => {
-    // If not logged in, try loading from local storage as fallback
-    if (!uid) {
-      let validLocalData = null;
-      for (const key of ['inventory', 'aqua_blue_inventory']) {
-        const str = localStorage.getItem(key);
-        if (str) {
-          try {
-            const arr = JSON.parse(str);
-            if (Array.isArray(arr) && arr.length > 0) validLocalData = arr;
-          } catch(e) {}
-        }
-      }
-      if (validLocalData) {
-        try {
-          setInventory(validLocalData);
-        } catch (e) {
-          console.error("Local storage error:", e);
-        }
-      }
-      return;
-    }
-
-    // First check for local data to migrate
-    let localDataToMigrate: any = null;
-    let usedKey = '';
-    for (const key of ['inventory', 'aqua_blue_inventory']) {
+    let validLocal: InventoryItem[] | null = null;
+    for (const key of ['aqua_blue_inventory', 'inventory']) {
       const str = localStorage.getItem(key);
       if (str) {
         try {
           const arr = JSON.parse(str);
           if (Array.isArray(arr) && arr.length > 0) {
-            localDataToMigrate = arr;
-            usedKey = key;
+            validLocal = arr;
             break;
           }
         } catch(e) {}
       }
     }
 
-    if (localDataToMigrate) {
-      try {
-        console.log(`Migrating local inventory from ${usedKey} to Supabase...`);
-        const inserts = localDataToMigrate.map((item: any) => ({
-          ...item,
-          id: item.id.toString().startsWith(uid) ? item.id.toString() : `${uid}_${item.id}`,
-          ownerId: uid,
-        }));
-        await supabase.from('inventory').upsert(inserts);
-        localStorage.removeItem('inventory');
-        localStorage.removeItem('aqua_blue_inventory');
-        console.log("تم مزامنة بيانات المخزن القديمة بنجاح.");
-      } catch (e) {
-        console.error("Inventory migration error:", e);
-      }
+    if (!validLocal || validLocal.length === 0) {
+      validLocal = getInitialSeedInventory();
+      persistToLocal(validLocal);
     }
 
-    const { data, error } = await supabase
-      .from('inventory')
-      .select('*');
-      
-    if (error) {
-      console.error("Error loading inventory:", error);
+    if (!uid || !isSupabaseConfigured) {
+      setInventory(sortInventoryItems(validLocal));
       return;
     }
 
-    let currentData = data as InventoryItem[];
-    
-    const hasStages = currentData.some(i => i.category === 'stage');
-    const hasParts = currentData.some(i => i.category === 'part');
-
-    if (!hasStages || !hasParts) {
-      const initialStages = [
-        { id: 's1', name: 'شمعة 1', category: 'stage', quantity: 0 },
-        { id: 's2', name: 'شمعة 2', category: 'stage', quantity: 0 },
-        { id: 's3', name: 'شمعة 3', category: 'stage', quantity: 0 },
-        { id: 's41', name: 'شمعة 4 (الممبرين)', category: 'stage', quantity: 0 },
-        { id: 's42', name: 'شمعة 4', category: 'stage', quantity: 0 },
-        { id: 's5', name: 'شمعة 5', category: 'stage', quantity: 0 },
-        { id: 's6', name: 'شمعة 6', category: 'stage', quantity: 0 },
-        { id: 's7', name: 'شمعة 7', category: 'stage', quantity: 0 },
-        { id: 's8', name: 'شمعة 8', category: 'stage', quantity: 0 },
-        { id: 'sc1', name: 'شمعة 1 كومباكت', category: 'stage', quantity: 0 },
-        { id: 'sc2', name: 'شمعة 2 كومباكت', category: 'stage', quantity: 0 },
-        { id: 'sc3', name: 'شمعة 3 كومباكت', category: 'stage', quantity: 0 },
-        { id: 'sc41', name: 'شمعة 4 كومباكت (الممبرين)', category: 'stage', quantity: 0 },
-        { id: 'sc42', name: 'شمعة 4 كومباكت', category: 'stage', quantity: 0 },
-        { id: 'sc5', name: 'شمعة 5 كومباكت', category: 'stage', quantity: 0 },
-        { id: 'sc6', name: 'شمعة 6 كومباكت', category: 'stage', quantity: 0 },
-        { id: 'sc7', name: 'شمعة 7 كومباكت', category: 'stage', quantity: 0 },
-        { id: 'sc8', name: 'شمعة 8 كومباكت', category: 'stage', quantity: 0 },
-      ];
-
-      const initialParts = [
-        { id: 'p1', name: 'موتور', category: 'part', quantity: 0 },
-        { id: 'p2', name: 'خزان', category: 'part', quantity: 0 },
-        { id: 'p3', name: 'هاوسنج', category: 'part', quantity: 0 },
-      ];
-
-      let itemsToSeed: any[] = [];
-      if (!hasStages) {
-        itemsToSeed = [...itemsToSeed, ...initialStages];
-      }
-      if (!hasParts) {
-        itemsToSeed = [...itemsToSeed, ...initialParts];
+    try {
+      const { data, error } = await supabase
+        .from('inventory')
+        .select('*');
+        
+      if (error) {
+        console.warn("Could not fetch inventory from Supabase, using local cache:", error.message);
+        setInventory(sortInventoryItems(validLocal));
+        return;
       }
 
-      if (itemsToSeed.length > 0) {
-         const inserts = itemsToSeed.map(item => ({
-            id: `${uid}_${item.id}`,
-            ownerId: uid,
-            name: item.name,
-            category: item.category,
-            quantity: item.quantity
-         }));
-         await supabase.from('inventory').upsert(inserts);
-         
-         // Fetch again after seed
-         const { data: updatedData } = await supabase.from('inventory').select('*').eq('ownerId', uid);
-         if (updatedData) currentData = updatedData as InventoryItem[];
+      if (data && data.length > 0) {
+        setInventory(sortInventoryItems(data as InventoryItem[]));
+        persistToLocal(data as InventoryItem[]);
+      } else {
+        // Empty cloud inventory: seed with default items
+        console.log("Supabase inventory empty, seeding default inventory items...");
+        setInventory(sortInventoryItems(validLocal));
+        persistToLocal(validLocal);
+        const inserts = validLocal.map(item => ({
+          ...item,
+          id: `${uid}_${item.id}`,
+          ownerId: uid
+        }));
+        try {
+          await supabase.from('inventory').upsert(inserts);
+        } catch(e) {}
       }
-    } else {
-      // Auto-heal ownerId for mismatch
-      const mismatch = currentData.filter((i: any) => i.ownerId && i.ownerId !== uid);
-      if (mismatch.length > 0) {
-        console.log(`Auto-healing ${mismatch.length} inventory items...`);
-        for (const item of mismatch) {
-           await supabase.from('inventory').update({ ownerId: uid }).eq('id', item.id);
-        }
-      }
+    } catch (err) {
+      console.error("Exception loading inventory:", err);
+      setInventory(sortInventoryItems(validLocal));
     }
-    
-    setInventory(currentData);
   };
 
   useEffect(() => {
-    fetchInventory(); // unconditional, handles uid internally
+    fetchInventory();
 
-    if (!uid) {
-      // Do not subscribe to realtime if not logged in
-      return;
-    }
+    if (!uid || !isSupabaseConfigured) return;
 
-    // Supabase Realtime subscription
     const subscription = supabase
       .channel('public:inventory')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'inventory' }, payload => {
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'inventory' }, () => {
         fetchInventory();
       })
       .subscribe();
@@ -228,89 +220,67 @@ export function useInventory(uid: string | undefined, addToTrash?: (type: 'custo
   }, [uid]);
 
   const updateItemQuantity = async (id: string, newQuantity: number) => {
-    if(!uid) return;
-    const item = inventory.find(i => i.id === id);
-    if(item) {
-      // Optimistic update
-      setInventory(prev => prev.map(i => i.id === id ? { ...i, quantity: newQuantity } : i));
+    setInventory(prev => {
+      const updated = prev.map(i => i.id === id ? { ...i, quantity: newQuantity } : i);
+      persistToLocal(updated);
+      return sortInventoryItems(updated);
+    });
+
+    if (uid && isSupabaseConfigured) {
       try {
-        const { error } = await supabase.from('inventory').update({ quantity: newQuantity }).eq('id', id);
-        if (error) {
-           // Revert on error
-           setInventory(prev => prev.map(i => i.id === id ? { ...i, quantity: item.quantity } : i));
-           throw error;
-        }
-      } catch (error: any) {
-        console.error("خطأ في تحديث كمية المخزن:", error);
-        let errMsg = error?.message || error;
-        if (typeof errMsg === 'string' && (errMsg.includes('Failed to fetch') || errMsg.includes('fetch failed'))) {
-           errMsg = 'تعذر الاتصال بقاعدة البيانات. (ربما دخلت في وضع السكون)';
-        }
-        alert("⚠️ فشل تحديث كمية الصنف سحابياً: " + errMsg);
+        await supabase.from('inventory').update({ quantity: newQuantity }).eq('id', id);
+      } catch (error) {
+        console.warn("Could not sync inventory update to Supabase:", error);
       }
     }
   };
 
   const addInventoryItem = async (item: InventoryItem) => {
-    if(!uid) return;
-    const newId = item.id || Date.now().toString();
-    const docId = newId.startsWith(uid) ? newId : `${uid}_${newId}`;
-    
-    // Optimistic
-    const finalItem = { ...item, id: docId, ownerId: uid };
-    setInventory(prev => [...prev, finalItem as InventoryItem]);
+    const newId = item.id || 'inv_' + Date.now();
+    const finalItem: InventoryItem = { ...item, id: newId, ownerId: uid };
 
-    try {
-      const { error } = await supabase.from('inventory').upsert(finalItem);
-      if (error) {
-        setInventory(prev => prev.filter(i => i.id !== docId));
-        throw error;
+    setInventory(prev => {
+      const updated = [...prev, finalItem];
+      persistToLocal(updated);
+      return sortInventoryItems(updated);
+    });
+
+    if (uid && isSupabaseConfigured) {
+      try {
+        await supabase.from('inventory').upsert({
+          ...finalItem,
+          id: uid ? `${uid}_${newId}` : newId,
+          ownerId: uid
+        });
+      } catch (err) {
+        console.warn("Failed to add inventory item to cloud:", err);
       }
-    } catch (error: any) {
-      console.error("خطأ في إضافة صنف للمخزن:", error);
-      let errMsg = error?.message || error;
-      if (typeof errMsg === 'string' && (errMsg.includes('Failed to fetch') || errMsg.includes('fetch failed'))) {
-         errMsg = 'تعذر الاتصال بقاعدة البيانات. (ربما دخلت في وضع السكون)';
-      }
-      alert("⚠️ فشلت إضافة الصنف سحابياً: " + errMsg);
     }
   };
 
   const deleteInventoryItem = async (id: string) => {
-    let proceed = false;
-    try {
-      proceed = confirm("هل أنت متأكد من نقل هذا الصنف لسلة المهملات؟");
-    } catch {
-      proceed = true; // Fallback safely if browser blocks confirm in sandboxed iframe
-    }
-    // Sandboxed iframes inside AI Studio block native confirm() and silently return false.
-    // Since we have a 'Trash Bin' (سلة المهملات) for full recovery, we safely proceed with deletion.
-    proceed = true;
-    if (proceed) {
-      const item = inventory.find(i => i.id === id);
-      if(item && addToTrash) addToTrash('inventory', item);
-      if (uid) {
-        // Optimistic delete
-        setInventory(prev => prev.filter(i => i.id !== id));
-        try {
-          const { error } = await supabase.from('inventory').delete().eq('id', id);
-          if (error) throw error;
-        } catch (error: any) {
-          console.error("خطأ في مسح الصنف:", error);
-          if (item) setInventory(prev => [...prev, item]); // Revert
-          let errMsg = error?.message || error;
-          if (typeof errMsg === 'string' && (errMsg.includes('Failed to fetch') || errMsg.includes('fetch failed'))) {
-             errMsg = 'تعذر الاتصال بقاعدة البيانات. (ربما دخلت في وضع السكون)';
-          }
-          alert("⚠️ فشل حذف الصنف سحابياً: " + errMsg);
-        }
+    const item = inventory.find(i => i.id === id);
+    if (item && addToTrash) addToTrash('inventory', item);
+
+    setInventory(prev => {
+      const updated = prev.filter(i => i.id !== id);
+      persistToLocal(updated);
+      return updated;
+    });
+
+    if (uid && isSupabaseConfigured) {
+      try {
+        await supabase.from('inventory').delete().eq('id', id);
+      } catch (error) {
+        console.warn("Failed to delete inventory item from cloud:", error);
       }
     }
   };
 
   const deductItems = async (stages: string[], parts: string[], isCompact?: boolean) => {
-    if (!uid) return;
+    let currentInventory = [...inventory];
     let updates: any[] = [];
+
     stages.forEach(stageLabel => {
       const candidates = [stageLabel];
       const numMatch = stageLabel.match(/\d+/);
@@ -326,7 +296,7 @@ export function useInventory(uid: string | undefined, addToTrash?: (type: 'custo
         }
       }
 
-      let item = inventory.find(i => 
+      let item = currentInventory.find(i => 
         i.category === 'stage' && 
         candidates.some(c => i.name.trim() === c.trim())
       );
@@ -336,7 +306,7 @@ export function useInventory(uid: string | undefined, addToTrash?: (type: 'custo
       if (!item && (isCompact || stageLabel.includes('كومباكت')) && isFallbackNum123) {
         if (fallbackNumMatch) {
           const num = fallbackNumMatch[0];
-          item = inventory.find(i => 
+          item = currentInventory.find(i => 
             i.category === 'stage' && 
             i.name.includes(num) && 
             i.name.includes('كومباكت')
@@ -345,36 +315,35 @@ export function useInventory(uid: string | undefined, addToTrash?: (type: 'custo
       }
 
       if (!item) {
-        item = inventory.find(i => i.category === 'stage' && i.name === stageLabel);
+        item = currentInventory.find(i => i.category === 'stage' && i.name === stageLabel);
       }
 
       if (item && item.quantity > 0) {
-        updates.push({ ...item, quantity: item.quantity - 1, ownerId: uid });
+        const newQty = item.quantity - 1;
+        currentInventory = currentInventory.map(i => i.id === item!.id ? { ...i, quantity: newQty } : i);
+        updates.push({ ...item, quantity: newQty, ownerId: uid });
       }
     });
     
     parts.forEach(partName => {
-       const item = inventory.find(i => i.category === 'part' && i.name === partName);
-       if (item && item.quantity > 0) {
-         updates.push({ ...item, quantity: item.quantity - 1, ownerId: uid });
-       }
+      const item = currentInventory.find(i => i.category === 'part' && i.name === partName);
+      if (item && item.quantity > 0) {
+        const newQty = item.quantity - 1;
+        currentInventory = currentInventory.map(i => i.id === item.id ? { ...i, quantity: newQty } : i);
+        updates.push({ ...item, quantity: newQty, ownerId: uid });
+      }
     });
 
     if (updates.length > 0) {
-      // Optimistic
-      setInventory(prev => prev.map(invItem => {
-        const updatedTarget = updates.find(u => u.id === invItem.id);
-        return updatedTarget ? { ...invItem, quantity: updatedTarget.quantity } : invItem;
-      }));
+      setInventory(sortInventoryItems(currentInventory));
+      persistToLocal(currentInventory);
 
-      try {
-        const { error } = await supabase.from('inventory').upsert(updates);
-        if (error) {
-           fetchInventory(); // Revert completely
-           throw error;
+      if (uid && isSupabaseConfigured) {
+        try {
+          await supabase.from('inventory').upsert(updates);
+        } catch (err) {
+          console.error("Failed to deduct items on database server:", err);
         }
-      } catch (err) {
-        console.error("Failed to deduct items on database server:", err);
       }
     }
   };

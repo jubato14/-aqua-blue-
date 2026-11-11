@@ -3,6 +3,7 @@ export interface InventoryItem {
   name: string;
   category: 'stage' | 'part' | 'device';
   quantity: number;
+  ownerId?: string;
 }
 
 export interface Stage {

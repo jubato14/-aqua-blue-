@@ -9,10 +9,10 @@ interface NavigationProps {
 }
 
 export function Navigation({ activeTab, setActiveTab, userRole = 'user', pendingUsersCount = 0 }: NavigationProps) {
-  const showCustomers = userRole === 'owner' || userRole === 'customer_service' || userRole === 'user';
-  const showInventory = userRole === 'owner' || userRole === 'storekeeper' || userRole === 'customer_service' || userRole === 'user';
-  const showArchive = userRole === 'owner' || userRole === 'customer_service' || userRole === 'user';
-  const showTrash = userRole === 'owner' || userRole === 'user';
+  const showCustomers = userRole === 'owner' || userRole === 'admin' || userRole === 'customer_service' || userRole === 'user';
+  const showInventory = userRole === 'owner' || userRole === 'admin' || userRole === 'storekeeper' || userRole === 'customer_service' || userRole === 'user';
+  const showArchive = userRole === 'owner' || userRole === 'admin' || userRole === 'customer_service' || userRole === 'user';
+  const showTrash = userRole === 'owner' || userRole === 'admin' || userRole === 'user';
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 h-20 bg-white border-t border-slate-100 flex items-center justify-around px-2 pb-safe shadow-[0_-10px_30px_-15px_rgba(0,0,0,0.05)] z-50">

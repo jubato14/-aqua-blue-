@@ -21,7 +21,6 @@ import { Navigation } from './components/Navigation';
 import { Customer, Visit } from './types';
 import { ClientPortal } from './components/ClientPortal';
 import { MaintenanceFormModal } from './components/MaintenanceFormModal';
-import { ProjectDownloadBanner } from './components/ProjectDownloadBanner';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -49,14 +48,16 @@ export default function App() {
     if (isOfflineMode && !userProfile) {
       setUserProfile({
         id: 'offline-admin',
-        name: 'مدير النظام (وضع المعاينة المحلي)',
-        email: 'admin@aquablue.com',
-        role: 'admin',
+        displayName: 'مدير النظام (المالك)',
+        name: 'مدير النظام (المالك)',
+        email: 'belalellol123@gmail.com',
+        role: 'owner',
         status: 'approved'
       });
       setSupabaseUser({
         id: 'offline-admin',
-        email: 'admin@aquablue.com'
+        displayName: 'مدير النظام (المالك)',
+        email: 'belalellol123@gmail.com'
       } as any);
       setIsAuthChecking(false);
     }
@@ -169,10 +170,17 @@ export default function App() {
 
   const DEFAULT_MEMBERS = [
     {
+      id: '8c2f3829-07a5-4412-8b19-ce9f5e38f123',
+      email: 'belalellol123@gmail.com',
+      displayName: 'Belal Ellol (المالك)',
+      role: 'owner',
+      status: 'approved'
+    },
+    {
       id: '8c2f3829-07a5-4412-8b19-ce9f5e38f111',
       email: 'belalellol111@gmail.com',
       displayName: 'Belal Ellol',
-      role: 'user',
+      role: 'owner',
       status: 'approved'
     },
     {
@@ -192,36 +200,75 @@ export default function App() {
     {
       id: '8c2f3829-07a5-4412-8b19-ce9f5e38f998',
       email: 'bso103998@gmail.com',
-      displayName: 'عبدالرحمن محمد',
+      displayName: 'عبدالرحمن محمد (فني صيانة)',
       role: 'user',
+      status: 'approved'
+    },
+    {
+      id: '8c2f3829-07a5-4412-8b19-ce9f5e38fa01',
+      email: 'ahmed.mamdouh@aquablue.com',
+      displayName: 'أحمد ممدوح (خدمة عملاء)',
+      role: 'customer_service',
+      status: 'approved'
+    },
+    {
+      id: '8c2f3829-07a5-4412-8b19-ce9f5e38fa02',
+      email: 'mahmoud.store@aquablue.com',
+      displayName: 'محمود النجار (أمين مخزن)',
+      role: 'storekeeper',
       status: 'approved'
     }
   ];
 
-  // Handle Users List Subscription (Only accessible for owner role)
+  // Handle Users List Subscription (Accessible for owner role and offline mode)
   useEffect(() => {
-    if (!supabaseUser || userProfile?.role !== 'owner') {
+    const isOwnerRole = userProfile?.role === 'owner' || userProfile?.role === 'admin' || isOfflineMode;
+    if (!isOwnerRole) {
       setUsersList([]);
       return;
     }
 
     const fetchUsers = async () => {
-        const { data } = await supabase.from('users').select('*');
-        if (data) {
-          const merged = [...data];
-          DEFAULT_MEMBERS.forEach(defM => {
-            if (!merged.some(m => m.email?.toLowerCase() === defM.email.toLowerCase())) {
-              merged.push(defM);
-            }
-          });
-          setUsersList(merged);
+      let merged: any[] = [];
+      const savedLocalUsers = localStorage.getItem('aqua_users_list');
+      if (savedLocalUsers) {
+        try {
+          const parsed = JSON.parse(savedLocalUsers);
+          if (Array.isArray(parsed) && parsed.length > 0) merged = parsed;
+        } catch(e) {}
+      }
+
+      if (isSupabaseConfigured) {
+        try {
+          const { data } = await supabase.from('users').select('*');
+          if (data && data.length > 0) {
+            data.forEach(item => {
+              if (!merged.some(m => m.id === item.id)) merged.push(item);
+            });
+          }
+        } catch(e) {}
+      }
+
+      DEFAULT_MEMBERS.forEach(defM => {
+        if (!merged.some(m => m.email?.toLowerCase() === defM.email.toLowerCase())) {
+          merged.push(defM);
         }
+      });
+
+      if (userProfile && !merged.some(m => m.id === userProfile.id)) {
+        merged.unshift(userProfile);
+      }
+
+      setUsersList(merged);
+      localStorage.setItem('aqua_users_list', JSON.stringify(merged));
     };
     fetchUsers();
     
-    const sub = supabase.channel('users_list').on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, fetchUsers).subscribe();
-    return () => { supabase.removeChannel(sub); };
-  }, [supabaseUser, userProfile]);
+    if (isSupabaseConfigured) {
+      const sub = supabase.channel('users_list').on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, fetchUsers).subscribe();
+      return () => { supabase.removeChannel(sub); };
+    }
+  }, [supabaseUser, userProfile, isOfflineMode]);
 
   const handleApproveUser = async (targetUserId: string) => {
     setUsersList(prev => prev.map(u => u.id === targetUserId ? { ...u, status: 'approved' } : u));
@@ -334,17 +381,17 @@ export default function App() {
   const { trash, addToTrash, permanentlyDelete, restoreItem, emptyTrash } = useTrash();
   
   // Dynamic role management and effective Owner database reference
-  const userRole = userProfile?.role || 'user';
-  const isOwner = userRole === 'owner';
-  const isApproved = userProfile && (userProfile.status === 'approved' || supabaseUser?.email?.toLowerCase() === 'belalellol123@gmail.com');
-  const effectiveOwnerId = isApproved ? ((userRole === 'user' || userRole === 'client') ? supabaseUser?.id : (systemSettings?.ownerUid || supabaseUser?.id)) : undefined;
+  const userRole = userProfile?.role || 'owner';
+  const isOwner = userRole === 'owner' || userRole === 'admin' || isOfflineMode;
+  const isApproved = userProfile && (userProfile.status === 'approved' || supabaseUser?.email?.toLowerCase() === 'belalellol123@gmail.com' || isOwner);
+  const effectiveOwnerId = isApproved ? ((userRole === 'user' || userRole === 'client') ? supabaseUser?.id : (systemSettings?.ownerUid || supabaseUser?.id || 'admin_owner')) : 'admin_owner';
 
   // Granular Access Permission check flags (Manager, CSR, Storekeeper, Client, User)
-  const canAddEditCustomers = userRole === 'owner' || userRole === 'customer_service' || userRole === 'user';
-  const canDeleteCustomersAndVisits = userRole === 'owner' || userRole === 'user';
-  const canManageInventory = userRole === 'owner' || userRole === 'storekeeper' || userRole === 'user';
-  const canUpdateInventory = userRole === 'owner' || userRole === 'storekeeper' || userRole === 'customer_service' || userRole === 'user';
-  const canViewTrash = userRole === 'owner' || userRole === 'user';
+  const canAddEditCustomers = isOwner || userRole === 'customer_service' || userRole === 'user';
+  const canDeleteCustomersAndVisits = isOwner || userRole === 'user';
+  const canManageInventory = isOwner || userRole === 'storekeeper' || userRole === 'user';
+  const canUpdateInventory = isOwner || userRole === 'storekeeper' || userRole === 'customer_service' || userRole === 'user';
+  const canViewTrash = isOwner || userRole === 'user';
 
   const { customers, setCustomers, isSyncing, syncToCloud, deleteCustomer, toggleStatus, handleBackup, handleRestoreFromJson, fetchCustomers } = useCustomers(effectiveOwnerId, addToTrash);
   const { inventory, updateItemQuantity, addInventoryItem, deleteInventoryItem, deductItems, fetchInventory } = useInventory(effectiveOwnerId, addToTrash);
@@ -827,10 +874,8 @@ export default function App() {
 
   if (!isSupabaseConfigured && !isOfflineMode) {
     return (
-      <div className="bg-slate-50 dark:bg-[#020617] min-h-screen text-slate-800 dark:text-slate-100 font-sans" dir="rtl">
-        <ProjectDownloadBanner />
-        <div className="p-6">
-          <div className="max-w-2xl mx-auto mt-6 p-8 bg-white dark:bg-[#0f172a] rounded-3xl shadow-xl border border-slate-200 dark:border-blue-900/50">
+      <div className="bg-slate-50 dark:bg-[#020617] min-h-screen text-slate-800 dark:text-slate-100 font-sans p-6" dir="rtl">
+        <div className="max-w-2xl mx-auto mt-6 p-8 bg-white dark:bg-[#0f172a] rounded-3xl shadow-xl border border-slate-200 dark:border-blue-900/50">
           <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 flex items-center justify-center rounded-2xl mb-6 mx-auto">
             <Cloud size={32} />
           </div>
@@ -880,16 +925,13 @@ export default function App() {
             </p>
           </div>
         </div>
-        </div>
       </div>
     );
   }
 
   if (!supabaseUser && !isOfflineMode) {
     return (
-      <div className="min-h-screen bg-[#F8FAFC] dark:bg-[#020617] flex flex-col font-sans text-right" dir="rtl">
-        <ProjectDownloadBanner />
-        <div className="flex-1 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-[#F8FAFC] dark:bg-[#020617] flex items-center justify-center font-sans text-right p-4" dir="rtl">
         <div className="bg-white dark:bg-[#0f172a] p-8 rounded-3xl shadow-xl w-full max-w-md text-center border border-slate-100 dark:border-blue-900/40">
           <div className="w-20 h-20 bg-gradient-to-br from-[#1E3A8A] to-[#0891B2] rounded-2xl mx-auto flex items-center justify-center mb-6 shadow-lg shadow-blue-500/30">
             <Droplet size={40} className="text-white" />
@@ -1030,7 +1072,6 @@ export default function App() {
               <span>⚡ الدخول الفوري كمدير (وضع المعاينة المحلي)</span>
             </button>
           </div>
-        </div>
         </div>
       </div>
     );
@@ -1178,7 +1219,6 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] dark:bg-[#020617] pb-24 font-sans text-right text-slate-900 dark:text-slate-50 transition-colors duration-200" dir="rtl">
-      <ProjectDownloadBanner />
       <header className="bg-gradient-to-l from-[#1E3A8A] to-[#0891B2] dark:from-slate-900 dark:to-slate-800 p-6 shadow-lg rounded-b-[2rem] mb-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
@@ -1791,7 +1831,7 @@ export default function App() {
             </div>
 
             {/* Monthly Statistics Section for Admin/Owner */}
-            {userProfile?.role === 'owner' && (() => {
+            {(isOwner || userProfile?.role === 'owner' || isOfflineMode) && (() => {
               const formattedMonth = statsMonth < 10 ? '0' + statsMonth : statsMonth.toString();
               const targetMonthYearStr = `${statsYear}-${formattedMonth}`;
               
@@ -1927,7 +1967,7 @@ export default function App() {
             })()}
 
             {/* Owner specific User Administration list */}
-            {userProfile?.role === 'owner' && (
+            {(userProfile?.role === 'owner' || userProfile?.role === 'admin' || isOfflineMode) && (
               <div className="bg-white dark:bg-[#0f172a] p-6 rounded-3xl shadow-sm border border-slate-100 dark:border-blue-900/40 space-y-4 text-right" dir="rtl">
                 <div className="flex items-center gap-2 border-b border-slate-100 dark:border-blue-900/40 pb-3">
                   <UserCheck className="text-blue-600 dark:text-blue-400" size={20} />
@@ -2073,20 +2113,6 @@ export default function App() {
                   >
                     <Cloud size={14} className={isSyncing ? "animate-bounce" : ""} /> {isSyncing ? 'جارٍ...' : 'مزامنة'}
                   </button>
-                </div>
-
-                <div className="mt-3 pt-3 border-t border-slate-200/80 dark:border-blue-900/40">
-                  <a 
-                    href="/aqua-blue-water.zip" 
-                    download="aqua-blue-water.zip"
-                    className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-black py-3 px-4 rounded-2xl transition-all shadow-md shadow-blue-500/20 text-xs flex items-center justify-center gap-2 cursor-pointer text-center active:scale-95"
-                  >
-                    <Download size={16} />
-                    <span>تنزيل ملفات المشروع كاملة لجهازك (ZIP)</span>
-                  </a>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400 text-center mt-1.5">
-                    ملف مضغوط نظيف (30 ملفاً فقط) يحتوي على سكريبت الرفع لـ Vercel وأكواد التطبيق
-                  </p>
                 </div>
               </div>
 
