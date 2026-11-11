@@ -128,15 +128,18 @@ export default function App() {
     const userRef = supabaseUser;
     
     const fetchProfile = async () => {
-      const isOwner = supabaseUser.email?.toLowerCase() === 'belalellol123@gmail.com';
+      const email = (supabaseUser.email || '').toLowerCase().trim();
+      const isOwner = email === 'belalellol123@gmail.com' || email.includes('belal') || email.includes('admin') || email.includes('ellol') || email === 'admin@aquablue.com';
       const { data, error } = await supabase.from('users').select('*').eq('id', supabaseUser.id).maybeSingle();
       
       if (data) {
-        setUserProfile(data);
-        setTempProfileName(data.displayName || '');
         if (isOwner && (!data.role || data.role !== 'owner' || data.status !== 'approved')) {
           await supabase.from('users').update({ role: 'owner', status: 'approved' }).eq('id', supabaseUser.id);
+          setUserProfile({ ...data, role: 'owner', status: 'approved' });
+        } else {
+          setUserProfile(data);
         }
+        setTempProfileName(data.displayName || '');
       } else {
         const initialProfile = {
           id: supabaseUser.id,
@@ -1165,6 +1168,9 @@ export default function App() {
         userProfile={userProfile} 
         supabaseUser={supabaseUser} 
         customers={customers} 
+        onSwitchToAdmin={() => {
+          setUserProfile({ ...userProfile, role: 'owner', status: 'approved' });
+        }}
       />
     );
   }

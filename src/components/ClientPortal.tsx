@@ -8,12 +8,24 @@ interface ClientPortalProps {
   userProfile: any;
   supabaseUser: any;
   customers: Customer[];
+  onSwitchToAdmin?: () => void;
 }
 
-export function ClientPortal({ userProfile, supabaseUser, customers }: ClientPortalProps) {
+export function ClientPortal({ userProfile, supabaseUser, customers, onSwitchToAdmin }: ClientPortalProps) {
   const [codeInput, setCodeInput] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+
+  const handleSwitchToAdmin = async () => {
+    try {
+      await supabase.from('users').update({ role: 'owner', status: 'approved' }).eq('id', supabaseUser.id);
+    } catch (e) {
+      console.error(e);
+    }
+    if (onSwitchToAdmin) {
+      onSwitchToAdmin();
+    }
+  };
 
   // Find linked customer from live list
   const linkedCustomer = userProfile.linkedCustomerId
@@ -103,9 +115,27 @@ export function ClientPortal({ userProfile, supabaseUser, customers }: ClientPor
         {/* Welcome Card */}
         <div className="bg-white dark:bg-[#0f172a] p-6 rounded-3xl shadow-sm border border-slate-100 dark:border-blue-900/40 space-y-2">
           <h2 className="text-lg font-black text-slate-800 dark:text-slate-100">مرحباً بك، {userProfile.displayName}!</h2>
-          <p className="text-xs text-slate-550">
-            يمكنك من هنا متابعة وضع ومواعيد تغيير شمعات الفلتر والزيارات السابقة والجديدة الخاصة بك بكل سهولة.
+          <p className="text-xs text-slate-500">
+            أنت مسجل حالياً بصفتك <strong className="text-blue-600 dark:text-blue-400 font-bold">عميل</strong> (بوابة متابعة كارت الفلتر الشخصي).
           </p>
+        </div>
+
+        {/* Switch to Admin Banner */}
+        <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 text-white p-5 rounded-3xl shadow-lg border border-blue-400/30 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div>
+            <h3 className="font-black text-sm text-white flex items-center gap-1.5">
+              <span>👑</span> هل أنت المدير أو صاحب النظام؟
+            </h3>
+            <p className="text-xs text-blue-100/90 mt-1">
+              اضغط هنا لفتح لوحة تحكم الإدارة الكاملة، عرض كافة العملاء، المخزن، والمواعيد.
+            </p>
+          </div>
+          <button
+            onClick={handleSwitchToAdmin}
+            className="w-full sm:w-auto bg-white hover:bg-blue-50 text-blue-900 font-black px-5 py-3 rounded-2xl text-xs shadow-md active:scale-95 transition-all cursor-pointer whitespace-nowrap text-center"
+          >
+            الانتقال للوحة تحكم المدير ⚡
+          </button>
         </div>
 
         {/* Link Customer Card if not linked */}
