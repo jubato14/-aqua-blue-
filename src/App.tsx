@@ -41,8 +41,29 @@ export default function App() {
   const [tempProfileName, setTempProfileName] = useState('');
   const [systemSettings, setSystemSettings] = useState<any>(null);
 
+  const [isOfflineMode, setIsOfflineMode] = useState<boolean>(() => {
+    return localStorage.getItem('aqua_offline_mode') === 'true';
+  });
+
   useEffect(() => {
-    if (!supabaseUser) return;
+    if (isOfflineMode && !userProfile) {
+      setUserProfile({
+        id: 'offline-admin',
+        name: 'مدير النظام (وضع المعاينة المحلي)',
+        email: 'admin@aquablue.com',
+        role: 'admin',
+        status: 'approved'
+      });
+      setSupabaseUser({
+        id: 'offline-admin',
+        email: 'admin@aquablue.com'
+      } as any);
+      setIsAuthChecking(false);
+    }
+  }, [isOfflineMode, userProfile]);
+
+  useEffect(() => {
+    if (!supabaseUser || isOfflineMode) return;
     const fetchSettings = async () => {
       const { data } = await supabase.from('system_settings').select('value').eq('key', 'settings').maybeSingle();
       if (data) setSystemSettings(data.value);
@@ -68,6 +89,10 @@ export default function App() {
 
   // Handle User Auth State
   useEffect(() => {
+    if (!isSupabaseConfigured) {
+      setIsAuthChecking(false);
+      return;
+    }
     // Timeout applied so it doesn't block UI if Supabase is taking too long (e.g. paused network or AI studio cold start)
     const timeout = new Promise((resolve) => setTimeout(() => resolve({ timeout: true }), 1500));
     const getSessionPromise = supabase.auth.getSession();
@@ -294,6 +319,8 @@ export default function App() {
     } catch (e) {
       console.error(e);
     } finally {
+      localStorage.removeItem('aqua_offline_mode');
+      setIsOfflineMode(false);
       setSupabaseUser(null);
       setUserProfile(null);
     }
@@ -794,7 +821,7 @@ export default function App() {
     );
   }
 
-  if (!isSupabaseConfigured) {
+  if (!isSupabaseConfigured && !isOfflineMode) {
     return (
       <div className="bg-slate-50 dark:bg-[#020617] min-h-screen text-slate-800 dark:text-slate-100 font-sans" dir="rtl">
         <ProjectDownloadBanner />
@@ -833,16 +860,28 @@ export default function App() {
               </ul>
             </li>
           </ol>
-          <p className="mt-8 text-center text-xs text-slate-400 font-bold bg-slate-100 dark:bg-[#0f172a] p-3 rounded-lg">
-            قم بإعادة تشغيل الخادم (أو حفظ المتغيرات) وستختفي هذه الشاشة وسيتم توجيهك واجهة تسجيل الدخول فورا.
-          </p>
+
+          <div className="mt-8 pt-6 border-t border-slate-200 dark:border-blue-900/40 text-center">
+            <button
+              onClick={() => {
+                localStorage.setItem('aqua_offline_mode', 'true');
+                setIsOfflineMode(true);
+              }}
+              className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-black py-4 px-6 rounded-2xl shadow-lg transition-all text-sm flex items-center justify-center gap-2 cursor-pointer active:scale-95"
+            >
+              <span>🚀 الدخول الفوري وتجربة النظام محلياً الآن (بدون إعداد قاعدة بيانات)</span>
+            </button>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 font-medium">
+              سيعمل التطبيق بكامل وظائفه مع حفظ البيانات محلياً على جهازك فوراً.
+            </p>
+          </div>
         </div>
         </div>
       </div>
     );
   }
 
-  if (!supabaseUser) {
+  if (!supabaseUser && !isOfflineMode) {
     return (
       <div className="min-h-screen bg-[#F8FAFC] dark:bg-[#020617] flex flex-col font-sans text-right" dir="rtl">
         <ProjectDownloadBanner />
@@ -974,6 +1013,19 @@ export default function App() {
               </button>
             </form>
           )}
+
+          <div className="mt-5 pt-4 border-t border-slate-100 dark:border-blue-900/30">
+            <button
+              type="button"
+              onClick={() => {
+                localStorage.setItem('aqua_offline_mode', 'true');
+                setIsOfflineMode(true);
+              }}
+              className="w-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold py-3 px-4 rounded-xl text-xs transition flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
+            >
+              <span>⚡ الدخول الفوري كمدير (وضع المعاينة المحلي)</span>
+            </button>
+          </div>
         </div>
         </div>
       </div>
