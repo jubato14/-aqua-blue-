@@ -1215,7 +1215,6 @@ export default function App() {
         onSwitchToAdmin={() => {
           setUserProfile({ ...userProfile, role: 'owner', status: 'approved' });
         }}
-        onOpenTransferModal={() => setShowDataTransferModal(true)}
       />
     );
   }
@@ -1233,15 +1232,7 @@ export default function App() {
               <p className="text-cyan-100 text-sm opacity-80">نظام إدارة الفلاتر الشامل</p>
             </div>
           </div>
-          <div className="flex items-center gap-2.5">
-            <button
-              onClick={() => setShowDataTransferModal(true)}
-              className="bg-white/15 hover:bg-white/25 active:scale-95 text-white border border-white/20 py-2 px-3 rounded-2xl flex items-center gap-1.5 font-bold text-xs shadow-sm transition cursor-pointer"
-              title="نقل واستيراد بياناتي إلى Vercel"
-            >
-              <span>📲</span>
-              <span className="text-[11px]">نقل البيانات</span>
-            </button>
+          <div className="flex items-center gap-3">
             <div className="relative">
               <div className="w-12 h-12 rounded-full flex items-center justify-center font-bold relative bg-gradient-to-r from-yellow-400 to-amber-400 text-slate-900 shadow-[0_0_15px_rgba(234,179,8,0.6)] border border-yellow-300/40">
                 <Bell size={24} className="animate-pulse" />
@@ -2073,6 +2064,37 @@ export default function App() {
                     })
                   )}
                 </div>
+              </div>
+            )}
+
+            {/* Admin-Only Data Migration & Transfer Section */}
+            {(isOwner || userProfile?.role === 'owner' || userProfile?.role === 'admin' || isOfflineMode) && (
+              <div className="bg-gradient-to-r from-blue-900/60 via-indigo-900/50 to-blue-950/70 border border-blue-400/30 p-5 rounded-3xl shadow-lg space-y-3 animate-in fade-in">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-10 h-10 rounded-xl bg-blue-500/20 border border-blue-400/30 flex items-center justify-center text-lg">
+                      📲
+                    </div>
+                    <div>
+                      <h4 className="font-black text-sm text-white">نقل ومزامنة البيانات (AI Studio ⇄ Vercel)</h4>
+                      <p className="text-[11px] text-blue-200">خاص بالمدير (الأدمن) فقط لنقل وتصدير بياناتك</p>
+                    </div>
+                  </div>
+                  <span className="text-[10px] font-bold bg-amber-400 text-slate-950 px-2.5 py-1 rounded-full shadow-sm">
+                    🔒 الأدمن فقط
+                  </span>
+                </div>
+
+                <p className="text-xs text-blue-100/90 leading-relaxed">
+                  يمكنك من هنا نسخ كامل بيانات عملائك وزياراتك ومخزنك المسجلة هنا، ولصقها في موقعك على Vercel بنقرة زر واحدة لتظهر هناك فوراً.
+                </p>
+
+                <button
+                  onClick={() => setShowDataTransferModal(true)}
+                  className="w-full bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-600 active:scale-95 text-white font-black py-3.5 px-4 rounded-2xl shadow-lg shadow-blue-500/20 transition flex items-center justify-center gap-2 text-xs cursor-pointer"
+                >
+                  <span>📲 فتح أداة نقل وتصدير / استيراد البيانات</span>
+                </button>
               </div>
             )}
 

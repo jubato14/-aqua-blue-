@@ -9,10 +9,9 @@ interface ClientPortalProps {
   supabaseUser: any;
   customers: Customer[];
   onSwitchToAdmin?: () => void;
-  onOpenTransferModal?: () => void;
 }
 
-export function ClientPortal({ userProfile, supabaseUser, customers, onSwitchToAdmin, onOpenTransferModal }: ClientPortalProps) {
+export function ClientPortal({ userProfile, supabaseUser, customers, onSwitchToAdmin }: ClientPortalProps) {
   const [codeInput, setCodeInput] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -103,16 +102,6 @@ export function ClientPortal({ userProfile, supabaseUser, customers, onSwitchToA
             </div>
           </div>
           <div className="flex items-center gap-2">
-            {onOpenTransferModal && (
-              <button
-                onClick={onOpenTransferModal}
-                className="px-2.5 py-2 bg-white/15 hover:bg-white/25 text-white rounded-xl text-xs flex items-center gap-1 transition"
-                title="نقل واستيراد البيانات"
-              >
-                <span>📲</span>
-                <span className="hidden sm:inline">نقل البيانات</span>
-              </button>
-            )}
             <button
               onClick={handleSwitchToAdmin}
               className="px-3.5 py-2 bg-gradient-to-r from-amber-400 to-yellow-400 hover:from-amber-500 hover:to-yellow-500 text-slate-900 font-black rounded-xl text-xs flex items-center gap-1.5 shadow-md active:scale-95 transition cursor-pointer"
