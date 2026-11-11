@@ -1,0 +1,6 @@
+{
+  "name": "Aqua Blue Water",
+  "description": "نظام إدارة الفلاتر الشامل - Comprehensive Filter Management System",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

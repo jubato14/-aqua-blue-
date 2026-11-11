@@ -1,0 +1,197 @@
+{
+  "entities": {
+    "Customer": {
+      "title": "Customer",
+      "description": "Represents a maintenance customer",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "description": "The UID of the user who owns this customer"
+        },
+        "name": {
+          "type": "string"
+        },
+        "phone1": {
+          "type": "string"
+        },
+        "phone2": {
+          "type": "string"
+        },
+        "phone3": {
+          "type": "string"
+        },
+        "region": {
+          "type": "string"
+        },
+        "addressDetail": {
+          "type": "string"
+        },
+        "deviceType": {
+          "type": "string"
+        },
+        "lastService": {
+          "type": "string"
+        },
+        "nextService": {
+          "type": "string"
+        },
+        "image": {
+          "type": "string"
+        },
+        "stages": {
+          "type": "array",
+          "description": "Array of stage objects"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["active", "inactive"]
+        },
+        "createdAt": {
+          "type": "timestamp"
+        },
+        "updatedAt": {
+          "type": "timestamp"
+        }
+      },
+      "required": ["ownerId", "name", "phone1", "status", "createdAt", "updatedAt"]
+    },
+    "Visit": {
+      "title": "Visit",
+      "description": "Represents a maintenance visit for a customer",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "description": "The UID of the user who owns this visit/customer"
+        },
+        "date": {
+          "type": "string"
+        },
+        "changedStages": {
+          "type": "array"
+        },
+        "usedParts": {
+          "type": "array"
+        },
+        "spareParts": {
+          "type": "string"
+        },
+        "cost": {
+          "type": "string"
+        },
+        "notes": {
+          "type": "string"
+        },
+        "tds": {
+          "type": "string"
+        },
+        "createdAt": {
+          "type": "timestamp"
+        }
+      },
+      "required": ["ownerId", "date", "createdAt"]
+    },
+    "InventoryItem": {
+      "title": "Inventory Item",
+      "description": "An item in the warehouse",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "description": "The UID of the user who owns this inventory item"
+        },
+        "name": {
+          "type": "string"
+        },
+        "category": {
+          "type": "string",
+          "enum": ["stage", "part", "device"]
+        },
+        "quantity": {
+          "type": "number"
+        },
+        "createdAt": {
+          "type": "timestamp"
+        },
+        "updatedAt": {
+          "type": "timestamp"
+        }
+      },
+      "required": ["ownerId", "name", "category", "quantity", "createdAt", "updatedAt"]
+    },
+    "User": {
+      "title": "User Profile",
+      "description": "Represents the dynamic user profile and role of registered staff or clients",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string" },
+        "displayName": { "type": "string" },
+        "role": { "type": "string", "enum": ["owner", "customer_service", "storekeeper", "client", "user"] },
+        "status": { "type": "string", "enum": ["approved", "blocked", "pending"] },
+        "linkedCustomerId": { "type": "string" },
+        "linkedCustomerPhone": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["uid", "email", "displayName", "role", "status", "createdAt"]
+    },
+    "SystemSettings": {
+      "title": "System Settings",
+      "description": "Stores general global settings including database owner's UID",
+      "type": "object",
+      "properties": {
+        "ownerUid": { "type": "string" }
+      },
+      "required": ["ownerUid"]
+    },
+    "ExternalVisit": {
+      "title": "External Visit",
+      "description": "Logs details of raw external visits and maintenance operations",
+      "type": "object",
+      "properties": {
+        "ownerId": { "type": "string" },
+        "savedAt": { "type": "string" }
+      },
+      "required": ["ownerId", "savedAt"]
+    }
+  },
+  "firestore": {
+    "customers": {
+      "schema": {
+        "$ref": "#/entities/Customer"
+      },
+      "description": "Root collection storing customers"
+    },
+    "customers/{customerId}/visits": {
+      "schema": {
+        "$ref": "#/entities/Visit"
+      },
+      "description": "Subcollection storing visits corresponding to a customer"
+    },
+    "inventory": {
+      "schema": {
+        "$ref": "#/entities/InventoryItem"
+      },
+      "description": "Root collection storing inventory items"
+    },
+    "users": {
+      "schema": {
+        "$ref": "#/entities/User"
+      },
+      "description": "Stores user status, profiles, and access control roles"
+    },
+    "system": {
+      "schema": {
+        "$ref": "#/entities/SystemSettings"
+      },
+      "description": "Stores global app-level systems control settings"
+    },
+    "external_visits": {
+      "schema": {
+        "$ref": "#/entities/ExternalVisit"
+      },
+      "description": "Logs for non-customer maintenance calls"
+    }
+  }
+}

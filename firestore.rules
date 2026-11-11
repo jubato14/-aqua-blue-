@@ -1,0 +1,99 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+  
+    // Global Safety Net
+    match /{document=**} { 
+      allow read, write: if false; 
+    }
+
+    // --- Helpers ---
+    function isSignedIn() { 
+      return request.auth != null; 
+    }
+
+    function isApprovedUser() {
+      return isSignedIn() && (
+        (request.auth.token.email != null && request.auth.token.email.matches('(?i)^belalellol123@gmail.com$')) ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.status == 'approved')
+      );
+    }
+
+    function isOwnerUser() {
+      return isSignedIn() && (
+        (request.auth.token.email != null && request.auth.token.email.matches('(?i)^belalellol123@gmail.com$')) ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'owner')
+      );
+    }
+
+    function isUserUser() {
+      return isApprovedUser() && (
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'user'
+      );
+    }
+
+    function isStorekeeperUser() {
+      return isApprovedUser() && (
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'storekeeper'
+      );
+    }
+
+    function isCustomerServiceUser() {
+      return isApprovedUser() && (
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'customer_service'
+      );
+    }
+
+    // --- Collections ---
+
+    match /users/{userId} {
+      allow get: if isSignedIn();
+      allow list: if isOwnerUser();
+      allow create: if isSignedIn() && request.auth.uid == userId && (
+        (request.auth.token.email != null && request.auth.token.email.matches('(?i)^belalellol123@gmail.com$') && request.resource.data.role == 'owner' && request.resource.data.status == 'approved') ||
+        (request.resource.data.role == 'user' && request.resource.data.status == 'pending')
+      );
+      allow update: if isSignedIn() && (
+        isOwnerUser() ||
+        (request.auth.uid == userId && 
+         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['displayName', 'linkedCustomerId', 'linkedCustomerPhone']))
+      );
+      allow delete: if isOwnerUser();
+    }
+
+    match /system/{systemDocId} {
+      allow read: if isSignedIn();
+      allow write: if isOwnerUser();
+    }
+
+    match /customers/{customerId} {
+      allow read: if isApprovedUser();
+      allow create, update: if isOwnerUser() || isUserUser() || isCustomerServiceUser();
+      allow delete: if isOwnerUser() || isUserUser();
+      
+      match /visits/{visitId} {
+        allow read: if isApprovedUser();
+        allow create, update: if isOwnerUser() || isUserUser() || isCustomerServiceUser();
+        allow delete: if isOwnerUser() || isUserUser();
+      }
+    }
+
+    match /inventory/{itemId} {
+      allow read: if isApprovedUser();
+      allow create, delete: if isOwnerUser() || isUserUser() || isStorekeeperUser();
+      allow update: if isOwnerUser() || isUserUser() || isStorekeeperUser() || isCustomerServiceUser();
+    }
+
+    match /external_visits/{visitId} {
+      allow read, create: if isApprovedUser();
+      allow update: if isOwnerUser() || isUserUser();
+      allow delete: if isOwnerUser() || isUserUser();
+    }
+  }
+}
