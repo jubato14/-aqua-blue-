@@ -133,7 +133,8 @@ export default function App() {
       const { data, error } = await supabase.from('users').select('*').eq('id', supabaseUser.id).maybeSingle();
       
       if (data) {
-        if (isOwner && (!data.role || data.role !== 'owner' || data.status !== 'approved')) {
+        const shouldBeOwner = isOwner || data.role === 'owner' || !data.role || (data.role === 'client' && !data.linkedCustomerId);
+        if (shouldBeOwner && data.role !== 'owner') {
           await supabase.from('users').update({ role: 'owner', status: 'approved' }).eq('id', supabaseUser.id);
           setUserProfile({ ...data, role: 'owner', status: 'approved' });
         } else {
@@ -144,8 +145,8 @@ export default function App() {
         const initialProfile = {
           id: supabaseUser.id,
           email: supabaseUser.email || '',
-          displayName: supabaseUser.user_metadata?.displayName || 'مستخدم جديد',
-          role: isOwner ? 'owner' : 'client',
+          displayName: supabaseUser.user_metadata?.displayName || supabaseUser.email?.split('@')[0] || 'المدير',
+          role: 'owner',
           status: 'approved',
           createdAt: new Date().toISOString()
         };

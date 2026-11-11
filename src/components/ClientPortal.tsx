@@ -101,13 +101,21 @@ export function ClientPortal({ userProfile, supabaseUser, customers, onSwitchToA
               <p className="text-cyan-100 text-xs opacity-80">كارت المتابعة الذكي وفترات الصيانة</p>
             </div>
           </div>
-          <button 
-            onClick={handleSignOut}
-            className="p-2 bg-white/10 hover:bg-white/20 text-white rounded-xl transition dark:bg-[#0f172a]"
-            title="تسجيل الخروج"
-          >
-            <LogOut size={18} />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleSwitchToAdmin}
+              className="px-3.5 py-2 bg-gradient-to-r from-amber-400 to-yellow-400 hover:from-amber-500 hover:to-yellow-500 text-slate-900 font-black rounded-xl text-xs flex items-center gap-1.5 shadow-md active:scale-95 transition cursor-pointer"
+            >
+              <span>👑 لوحة تحكم المدير</span>
+            </button>
+            <button 
+              onClick={handleSignOut}
+              className="p-2 bg-white/10 hover:bg-white/20 text-white rounded-xl transition dark:bg-[#0f172a]"
+              title="تسجيل الخروج"
+            >
+              <LogOut size={18} />
+            </button>
+          </div>
         </div>
       </header>
 
