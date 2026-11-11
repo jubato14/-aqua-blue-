@@ -21,6 +21,7 @@ import { Navigation } from './components/Navigation';
 import { Customer, Visit } from './types';
 import { ClientPortal } from './components/ClientPortal';
 import { MaintenanceFormModal } from './components/MaintenanceFormModal';
+import { DataTransferModal } from './components/DataTransferModal';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -409,6 +410,7 @@ export default function App() {
   const [showMaintenanceModal, setShowMaintenanceModal] = useState(false);
   const [showRecentVisitsModal, setShowRecentVisitsModal] = useState(false);
   const [showLastVisitFor, setShowLastVisitFor] = useState<Customer | null>(null);
+  const [showDataTransferModal, setShowDataTransferModal] = useState(false);
   
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
   const [expandedCustomer, setExpandedCustomer] = useState<number | null>(null);
@@ -1213,6 +1215,7 @@ export default function App() {
         onSwitchToAdmin={() => {
           setUserProfile({ ...userProfile, role: 'owner', status: 'approved' });
         }}
+        onOpenTransferModal={() => setShowDataTransferModal(true)}
       />
     );
   }
@@ -1230,7 +1233,15 @@ export default function App() {
               <p className="text-cyan-100 text-sm opacity-80">نظام إدارة الفلاتر الشامل</p>
             </div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5">
+            <button
+              onClick={() => setShowDataTransferModal(true)}
+              className="bg-white/15 hover:bg-white/25 active:scale-95 text-white border border-white/20 py-2 px-3 rounded-2xl flex items-center gap-1.5 font-bold text-xs shadow-sm transition cursor-pointer"
+              title="نقل واستيراد بياناتي إلى Vercel"
+            >
+              <span>📲</span>
+              <span className="text-[11px]">نقل البيانات</span>
+            </button>
             <div className="relative">
               <div className="w-12 h-12 rounded-full flex items-center justify-center font-bold relative bg-gradient-to-r from-yellow-400 to-amber-400 text-slate-900 shadow-[0_0_15px_rgba(234,179,8,0.6)] border border-yellow-300/40">
                 <Bell size={24} className="animate-pulse" />
@@ -2602,6 +2613,18 @@ export default function App() {
       <datalist id="regions-list">
         {uniqueRegions.map(r => <option key={r} value={r} />)}
       </datalist>
+
+      {/* Data Transfer Modal (AI Studio ⇄ Vercel) */}
+      <DataTransferModal
+        isOpen={showDataTransferModal}
+        onClose={() => setShowDataTransferModal(false)}
+        customers={customers}
+        setCustomers={setCustomers}
+        inventory={inventory}
+        fetchCustomers={fetchCustomers}
+        fetchInventory={fetchInventory}
+        syncToCloud={syncToCloud}
+      />
     </div>
   );
 }
